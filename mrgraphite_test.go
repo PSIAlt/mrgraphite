@@ -7,14 +7,44 @@ import (
 	"testing"
 )
 
+func mockListenUDP(network, address string) chan string {
+	uaddr, _ := net.ResolveUDPAddr(network, address)
+	l, err := net.ListenUDP(network, uaddr)
+    if err != nil {
+        panic("Error listening: "+err.Error())
+    }
+
+    chn := make(chan string, 100)
+    go func() {
+	for {
+		buf := make([]byte, 1024)
+		// Read the incoming connection into the buffer.
+		//fmt.Println("Reading")
+		l.SetDeadline( time.Now().Add(5*time.Millisecond) )
+		reqLen, err := l.Read(buf)
+		if err != nil {
+			l.Close()
+			chn <- "EOF"
+			return
+		}
+		chn <- string(buf[:reqLen])
+	}//read-write
+	}()
+	return chn
+
+}
+
 func mockListen(network, address string) chan string {
     // Listen for incoming connections.
+	if network == "udp" {
+		return mockListenUDP(network, address)
+	}
+
     l, err := net.Listen(network, address)
     if err != nil {
         panic("Error listening: "+err.Error())
     }
 
-//    defer l.Close()
     chn := make(chan string, 100)
     go func() {
 		conn, err := l.Accept()
@@ -79,4 +109,22 @@ func TestInitDefaultClient(t *testing.T) {
 		t.Fatalf("Invalid metric recv'd: '%s'", m2)
 	}
 	defClient.Stop()
+}
+
+func TestUDP(t *testing.T) {
+	log := myLog{t}
+	mAddr := "127.0.0.1:9993"
+	chn := mockListen("udp", mAddr)
+	InitDefaultClient("udp", mAddr, "pref.svc1", time.Millisecond, log)
+	check(t, defaultClient.network == "udp", "check network")
+	check(t, defaultClient.address == mAddr, "check address")
+	check(t, defaultClient.prefix == "pref.svc1.", "check prefix")
+	check(t, defaultClient.aggrtime == time.Millisecond, "check aggrtime")
+
+	tnow := time.Now().Unix()
+	Inc("metric0")
+	m1 := <-chn
+	if m1 != fmt.Sprintf("pref.svc1.metric0 1 %d\n", tnow) {
+		t.Fatalf("Invalid metric recv'd: '%s'", m1)
+	}
 }

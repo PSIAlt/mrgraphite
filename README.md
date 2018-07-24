@@ -22,7 +22,7 @@ func (l myLog) Warningf(format string, args ...interface{}) {
 ...
 
 log := myLog{}
-aggr_time := time.Millisecond*50
+aggr_time := 50*time.Millisecond
 defer mrgraphite.InitDefaultClient("udp", "graphite:2003", "prefix.myservice", aggr_time, log).Stop()
 
 ...
@@ -33,7 +33,7 @@ mrgraphite.SendSum("stat.bytes", bytes)
 // Same, but value==1
 mrgraphite.Inc("stat.requests")
 
-// Do not aggegate values, can be used to analyze raw metrics in graphtie
+// Do not aggregate values, can be used to analyze raw metrics in graphite
 mrgraphite.SendRaw("timing.request_time", time_elasped)
 
 func measureTimer() {
