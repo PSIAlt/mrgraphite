@@ -119,6 +119,9 @@ func (c *Client) GetTimer(name string) *Timer {
 	}
 }
 func (t *Timer) Stop() {
+	if t.c == nil {
+		return
+	}
 	tim := time.Since(t.start).Nanoseconds() / 1000000
 	t.c.SendRaw(t.name, tim)
 }
@@ -126,14 +129,24 @@ func (t *Timer) Stop() {
 
 //Default client methods
 func SendSum(name string, value int64) {
-	defaultClient.SendSum(name, value)
+	if defaultClient != nil && defaultClient.done != nil {
+		defaultClient.SendSum(name, value)
+	}
 }
 func Inc(name string) {
-	defaultClient.Inc(name)
+	if defaultClient != nil && defaultClient.done != nil {
+		defaultClient.Inc(name)
+	}
 }
 func SendRaw(name string, value int64) {
-	defaultClient.SendRaw(name, value)
+	if defaultClient != nil && defaultClient.done != nil {
+		defaultClient.SendRaw(name, value)
+	}
 }
 func GetTimer(name string) *Timer {
-	return defaultClient.GetTimer(name)
+	if defaultClient != nil && defaultClient.done != nil {
+		return defaultClient.GetTimer(name)
+	}else{
+		return &Timer{}
+	}
 }

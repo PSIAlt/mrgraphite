@@ -82,6 +82,10 @@ func check(t *testing.T, expr bool, msg string) {
 		t.Fatalf("Test expr failed: %s", msg)
 	}
 }
+func TestUninit(t *testing.T) {
+	Inc("metric1")
+}
+
 func TestInitDefaultClient(t *testing.T) {
 	log := myLog{t}
 	mAddr := "127.0.0.1:9993"
