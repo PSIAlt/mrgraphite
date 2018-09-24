@@ -90,6 +90,9 @@ func (c *Client) Stop() {
 
 // SendSum. Can be sum'ed and will be aggregated with aggrtime
 func (c *Client) SendSum(name string, value int64) {
+	if value==0 {
+		return
+	}
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	if v, ok := c.aggrMsg[name]; ok {
@@ -110,20 +113,44 @@ type Timer struct {
 	c *Client
 	name string
 	start time.Time
+	sendZero bool
+	sendRaw bool
+	sendSumCnt bool
 }
 func (c *Client) GetTimer(name string) *Timer {
 	return &Timer{
 		c: c,
 		name: name,
 		start: time.Now(),
+
 	}
+}
+func (t *Timer) SendZero() *Timer {
+	t.sendZero = true
+	return t
+}
+func (t *Timer) SendRaw() *Timer {
+	t.sendRaw = true
+	return t
+}
+func (t *Timer) SendSumCnt() *Timer {
+	t.sendSumCnt = true
+	return t
 }
 func (t *Timer) Stop() {
 	if t.c == nil {
 		return
 	}
 	tim := time.Since(t.start).Nanoseconds() / 1000000
-	t.c.SendRaw(t.name, tim)
+	if t.sendRaw {
+		if tim>0 || t.sendZero {
+			t.c.SendRaw(t.name, tim)
+		}
+	}
+	if t.sendSumCnt {
+		t.c.SendSum(t.name + "_sum", tim)
+		t.c.Inc(t.name + "_cnt")
+	}
 }
 
 

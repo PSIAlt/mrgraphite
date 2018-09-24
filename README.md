@@ -37,7 +37,7 @@ mrgraphite.Inc("stat.requests")
 mrgraphite.SendRaw("timing.request_time", time_elasped)
 
 func measureTimer() {
-	defer mrgraphite.GetTimer("timing.measureTimer").Stop()
+	defer mrgraphite.GetTimer("timing.measureTimer").SendRaw().Stop()
 	// blahblahblah
 	// mrgraphite automatically writes number of milliseconds elasped to graphite metric
 }
