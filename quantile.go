@@ -23,7 +23,7 @@ type Quantile struct {
 }
 
 func NewQuantile(name string, qVal int) *Quantile {
-	return NewQuantileC(GetDefaultClient(), name, qVal)
+	return NewQuantileC(defaultClient, name, qVal)
 }
 
 func NewQuantileC(c* Client, name string, qVal int) *Quantile {
@@ -36,11 +36,23 @@ func NewQuantileC(c* Client, name string, qVal int) *Quantile {
 		qVal: qVal,
 		values: valPool.Get().(valuesType),
 	}
-	c.quantileList = append(c.quantileList, q)
+	if c != nil {
+		c.quantileList = append(c.quantileList, q)
+	}else {
+		quantileListPreinit = append(quantileListPreinit, q)
+	}
 	return q
 }
 
 func (q *Quantile) GetTimer() *Timer {
+	if q.c == nil {
+		if defaultClient == nil {
+			// Pass to glabal GetTimer which is empty object
+			return GetTimer(q.name)
+		}
+		// Late default client initializaion
+		q.c = defaultClient
+	}
 	t := q.c.GetTimer(q.name)
 	t.quantile = q
 	return t

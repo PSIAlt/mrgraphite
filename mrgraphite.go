@@ -8,6 +8,7 @@ import (
 
 var (
 	defaultClient *Client
+	quantileListPreinit []*Quantile
 )
 const (
 	messagesBuffer = 1024
@@ -40,6 +41,7 @@ func InitDefaultClient(network, address, prefix string, aggrtime time.Duration, 
 		defaultClient.Stop()
 	}
 	defaultClient = NewClient(network, address, prefix, aggrtime, log)
+	defaultClient.quantileList = quantileListPreinit
 	return defaultClient
 }
 func GetDefaultClient() *Client {
