@@ -2,38 +2,39 @@ package mrgraphite
 
 import (
 	"net"
-	"time"
 	"sync"
+	"time"
 )
 
 var (
-	defaultClient *Client
+	defaultClient       *Client
 	quantileListPreinit []*Quantile
 )
+
 const (
 	messagesBuffer = 1024
 )
 
 type Logger interface {
-    Warningf(format string, args ...interface{})
+	Warningf(format string, args ...interface{})
 }
 
 type metric struct {
-	name string
+	name  string
 	value int64
-	ts int64
+	ts    int64
 }
 type Client struct {
-	conn net.Conn
+	conn                     net.Conn
 	network, address, prefix string
-	aggrtime time.Duration
-	done chan struct{}
-	messages chan metric
-	aggrMsg map[string]int64
-	mtx sync.Mutex
-	writeBuf []byte
-	quantileList []*Quantile
-	logger Logger
+	aggrtime                 time.Duration
+	done                     chan struct{}
+	messages                 chan metric
+	aggrMsg                  map[string]int64
+	mtx                      sync.Mutex
+	writeBuf                 []byte
+	quantileList             []*Quantile
+	logger                   Logger
 }
 
 func InitDefaultClient(network, address, prefix string, aggrtime time.Duration, log Logger) *Client {
@@ -57,17 +58,17 @@ func NewClient(network, address, prefix string, aggrtime time.Duration, log Logg
 			prefix += "."
 		}
 	}
-	c := &Client {
-		network: network,
-		address: address,
-		prefix: prefix,
-		aggrtime: aggrtime,
-		done: make(chan struct{}),
-		messages: make(chan metric, messagesBuffer),
-		aggrMsg: make(map[string]int64, 128),
-		writeBuf: make([]byte, 0, bgWriteMax),
+	c := &Client{
+		network:      network,
+		address:      address,
+		prefix:       prefix,
+		aggrtime:     aggrtime,
+		done:         make(chan struct{}),
+		messages:     make(chan metric, messagesBuffer),
+		aggrMsg:      make(map[string]int64, 128),
+		writeBuf:     make([]byte, 0, bgWriteMax),
 		quantileList: make([]*Quantile, 0, 4),
-		logger: log,
+		logger:       log,
 	}
 	c.InitConn()
 	go c.sendWorker()
@@ -79,7 +80,7 @@ func (c *Client) InitConn() bool {
 	c.conn, err = net.Dial(c.network, c.address)
 	if err != nil {
 		c.logger.Warningf("mrgraphite: Connecting to %s %s failed: %v", c.network, c.address, err)
-		c.conn=nil
+		c.conn = nil
 		return false
 	}
 	return true
@@ -94,13 +95,13 @@ func (c *Client) Stop() {
 
 // SendSum. Can be sum'ed and will be aggregated with aggrtime
 func (c *Client) SendSum(name string, value int64) {
-	if value==0 {
+	if value == 0 {
 		return
 	}
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	if v, ok := c.aggrMsg[name]; ok {
-		value += v;
+		value += v
 	}
 	c.aggrMsg[name] = value
 }
@@ -114,19 +115,20 @@ func (c *Client) SendRaw(name string, value int64) {
 }
 
 type Timer struct {
-	c *Client
-	name string
-	start time.Time
-	sendZero bool
-	sendRaw bool
+	c          *Client
+	name       string
+	start      time.Time
+	sendZero   bool
+	sendRaw    bool
 	sendSumCnt bool
-	quantile *Quantile
+	quantile   *Quantile
 }
+
 func (c *Client) GetTimer(name string) *Timer {
 	return &Timer{
-		c: c,
-		name: name,
-		start: time.Now(),
+		c:        c,
+		name:     name,
+		start:    time.Now(),
 		quantile: nil,
 	}
 }
@@ -149,19 +151,18 @@ func (t *Timer) Stop() {
 	}
 	tim := time.Since(t.start).Nanoseconds() / 1000000
 	if t.sendRaw {
-		if tim>0 || t.sendZero {
+		if tim > 0 || t.sendZero {
 			t.c.SendRaw(t.name, tim)
 		}
 	}
 	if t.sendSumCnt {
-		t.c.SendSum(t.name + "_sum", tim)
+		t.c.SendSum(t.name+"_sum", tim)
 		t.c.Inc(t.name + "_cnt")
 	}
 	if t.quantile != nil {
 		t.quantile.AddValue(tim)
 	}
 }
-
 
 //Default client methods
 func SendSum(name string, value int64) {
@@ -182,7 +183,7 @@ func SendRaw(name string, value int64) {
 func GetTimer(name string) *Timer {
 	if defaultClient != nil && defaultClient.done != nil {
 		return defaultClient.GetTimer(name)
-	}else{
+	} else {
 		return &Timer{}
 	}
 }

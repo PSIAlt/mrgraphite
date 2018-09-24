@@ -1,13 +1,14 @@
 package mrgraphite
 
 import (
+	"errors"
 	"sort"
 	"sync"
-	"errors"
 )
 
 type valuesType []int64
-var valPool = sync.Pool {
+
+var valPool = sync.Pool{
 	New: func() interface{} {
 		return make(valuesType, 0, 1024)
 	},
@@ -15,30 +16,30 @@ var valPool = sync.Pool {
 var EmptyListError = errors.New("Empty list")
 
 type Quantile struct {
-	c *Client
-	name string
-	qVal int
+	c      *Client
+	name   string
+	qVal   int
 	values valuesType
-	mtx sync.Mutex
+	mtx    sync.Mutex
 }
 
 func NewQuantile(name string, qVal int) *Quantile {
 	return NewQuantileC(defaultClient, name, qVal)
 }
 
-func NewQuantileC(c* Client, name string, qVal int) *Quantile {
+func NewQuantileC(c *Client, name string, qVal int) *Quantile {
 	if qVal < 0 || qVal > 100 {
 		panic("Wrong qVal")
 	}
-	q := &Quantile {
-		c: c,
-		name:  name,
-		qVal: qVal,
+	q := &Quantile{
+		c:      c,
+		name:   name,
+		qVal:   qVal,
 		values: valPool.Get().(valuesType),
 	}
 	if c != nil {
 		c.quantileList = append(c.quantileList, q)
-	}else {
+	} else {
 		quantileListPreinit = append(quantileListPreinit, q)
 	}
 	return q
@@ -78,16 +79,16 @@ func (q *Quantile) GetValue() (int64, error) {
 	q.values = valPool.Get().(valuesType)
 	q.mtx.Unlock()
 
-	if len(vc)==0 {
+	if len(vc) == 0 {
 		valPool.Put(vc[:0])
 		return 0, EmptyListError
 	}
 
 	sort.Slice(vc, func(i, j int) bool { return vc[i] < vc[j] })
-	nElem := float64(len(vc))/100.0 * float64(q.qVal)
-	retval := vc[ int(nElem) ]
+	nElem := float64(len(vc)) / 100.0 * float64(q.qVal)
+	retval := vc[int(nElem)]
 
-	if cap(vc)>100000 {
+	if cap(vc) > 100000 {
 		vc = valPool.New().(valuesType)
 	}
 	valPool.Put(vc[:0])

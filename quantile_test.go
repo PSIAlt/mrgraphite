@@ -38,8 +38,8 @@ func TestQuantileLazy(t *testing.T) {
 
 func TestQuantiles(t *testing.T) {
 	q95 := NewQuantile("timing.quantile1", 95)
-	for i:=0; i<100; i++ {
-		q95.AddValue( int64(i*3) )
+	for i := 0; i < 100; i++ {
+		q95.AddValue(int64(i * 3))
 	}
 
 	var err error

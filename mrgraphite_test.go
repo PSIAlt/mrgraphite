@@ -1,55 +1,55 @@
 package mrgraphite
 
 import (
-	"net"
-	"time"
 	"fmt"
+	"net"
 	"testing"
+	"time"
 )
 
 func mockListenUDP(network, address string) chan string {
 	uaddr, _ := net.ResolveUDPAddr(network, address)
 	l, err := net.ListenUDP(network, uaddr)
-    if err != nil {
-        panic("Error listening: "+err.Error())
-    }
+	if err != nil {
+		panic("Error listening: " + err.Error())
+	}
 
-    chn := make(chan string, 100)
-    go func() {
-	for {
-		buf := make([]byte, 1024)
-		// Read the incoming connection into the buffer.
-		//fmt.Println("Reading")
-		l.SetDeadline( time.Now().Add(5*time.Millisecond) )
-		reqLen, err := l.Read(buf)
-		if err != nil {
-			l.Close()
-			chn <- "EOF"
-			return
-		}
-		chn <- string(buf[:reqLen])
-	}//read-write
+	chn := make(chan string, 100)
+	go func() {
+		for {
+			buf := make([]byte, 1024)
+			// Read the incoming connection into the buffer.
+			//fmt.Println("Reading")
+			l.SetDeadline(time.Now().Add(5 * time.Millisecond))
+			reqLen, err := l.Read(buf)
+			if err != nil {
+				l.Close()
+				chn <- "EOF"
+				return
+			}
+			chn <- string(buf[:reqLen])
+		} //read-write
 	}()
 	return chn
 
 }
 
 func mockListen(network, address string) chan string {
-    // Listen for incoming connections.
+	// Listen for incoming connections.
 	if network == "udp" {
 		return mockListenUDP(network, address)
 	}
 
-    l, err := net.Listen(network, address)
-    if err != nil {
-        panic("Error listening: "+err.Error())
-    }
+	l, err := net.Listen(network, address)
+	if err != nil {
+		panic("Error listening: " + err.Error())
+	}
 
-    chn := make(chan string, 100)
-    go func() {
+	chn := make(chan string, 100)
+	go func() {
 		conn, err := l.Accept()
 		if err != nil {
-		    panic("Error accepting: "+err.Error())
+			panic("Error accepting: " + err.Error())
 		}
 		//fmt.Println("Accepted")
 
@@ -57,7 +57,7 @@ func mockListen(network, address string) chan string {
 			buf := make([]byte, 1024)
 			// Read the incoming connection into the buffer.
 			//fmt.Println("Reading")
-			conn.SetDeadline( time.Now().Add(5*time.Millisecond) )
+			conn.SetDeadline(time.Now().Add(5 * time.Millisecond))
 			reqLen, err := conn.Read(buf)
 			if err != nil {
 				conn.Close()
@@ -65,15 +65,15 @@ func mockListen(network, address string) chan string {
 				return
 			}
 			chn <- string(buf[:reqLen])
-		}//read-write
+		} //read-write
 	}()
 	return chn
 }
 
-type myLog struct {t *testing.T}
+type myLog struct{ t *testing.T }
 
 func (l myLog) Warningf(format string, args ...interface{}) {
-	fmt.Printf(format + "\n", args...)
+	fmt.Printf(format+"\n", args...)
 	//l.t.Logf(format, args...)
 }
 
