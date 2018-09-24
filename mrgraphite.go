@@ -31,6 +31,7 @@ type Client struct {
 	aggrMsg map[string]int64
 	mtx sync.Mutex
 	writeBuf []byte
+	quantileList []*Quantile
 	logger Logger
 }
 
@@ -63,6 +64,7 @@ func NewClient(network, address, prefix string, aggrtime time.Duration, log Logg
 		messages: make(chan metric, messagesBuffer),
 		aggrMsg: make(map[string]int64, 128),
 		writeBuf: make([]byte, 0, bgWriteMax),
+		quantileList: make([]*Quantile, 0, 4),
 		logger: log,
 	}
 	c.InitConn()
@@ -116,13 +118,14 @@ type Timer struct {
 	sendZero bool
 	sendRaw bool
 	sendSumCnt bool
+	quantile *Quantile
 }
 func (c *Client) GetTimer(name string) *Timer {
 	return &Timer{
 		c: c,
 		name: name,
 		start: time.Now(),
-
+		quantile: nil,
 	}
 }
 func (t *Timer) SendZero() *Timer {
@@ -137,6 +140,7 @@ func (t *Timer) SendSumCnt() *Timer {
 	t.sendSumCnt = true
 	return t
 }
+
 func (t *Timer) Stop() {
 	if t.c == nil {
 		return
@@ -150,6 +154,9 @@ func (t *Timer) Stop() {
 	if t.sendSumCnt {
 		t.c.SendSum(t.name + "_sum", tim)
 		t.c.Inc(t.name + "_cnt")
+	}
+	if t.quantile != nil {
+		t.quantile.AddValue(tim)
 	}
 }
 

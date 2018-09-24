@@ -104,6 +104,13 @@ func (c *Client) writeAggr() {
 	for k, v := range aggr {
 		c.addRaw(k, v, ts)
 	}
+
+	for _, v := range c.quantileList {
+		if val, err := v.GetValue(); err==nil {
+			name := fmt.Sprintf("%s_q%d", v.GetName(), v.GetQVal())
+			c.addRaw(name, val, ts)
+		}
+	}
 }
 
 func (c *Client) addRaw(name string, value int64, ts int64) {
