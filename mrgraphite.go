@@ -121,6 +121,7 @@ type Timer struct {
 	sendZero   bool
 	sendRaw    bool
 	sendSumCnt bool
+	divider uint
 	quantile   *Quantile
 }
 
@@ -130,7 +131,15 @@ func (c *Client) GetTimer(name string) *Timer {
 		name:     name,
 		start:    time.Now(),
 		quantile: nil,
+		divider: 1000000, //Milliseconds
 	}
+}
+func (t *Timer) SetDivider(d uint) *Timer {
+	if d == 0 {
+		panic("SetDivider: cannot accept 0")
+	}
+	t.divider = d
+	return t
 }
 func (t *Timer) SendZero() *Timer {
 	t.sendZero = true
@@ -149,7 +158,7 @@ func (t *Timer) Stop() {
 	if t.c == nil {
 		return
 	}
-	tim := time.Since(t.start).Nanoseconds() / 1000000
+	tim := time.Since(t.start).Nanoseconds() / int64(t.divider)
 	if t.sendRaw {
 		if tim > 0 || t.sendZero {
 			t.c.SendRaw(t.name, tim)
