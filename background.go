@@ -98,6 +98,7 @@ func (c *Client) flushWrite() {
 }
 
 func (c *Client) writeAggr() {
+	doneCopy := c.done
 	// Aggregate aggrMsg
 	c.mtx.Lock()
 	aggr := c.aggrMsg
@@ -105,13 +106,23 @@ func (c *Client) writeAggr() {
 	c.mtx.Unlock()
 	ts := time.Now().Unix()
 	for k, v := range aggr {
-		c.addRaw(k, v, ts)
+		select {
+		case <-doneCopy:
+			return
+		default:
+			c.addRaw(k, v, ts)
+		}
 	}
 
 	for _, v := range c.quantileList {
 		if val, err := v.GetValue(); err == nil {
 			name := fmt.Sprintf("%s_q%d", v.GetName(), v.GetQVal())
-			c.addRaw(name, val, ts)
+			select {
+			case <-doneCopy:
+				return
+			default:
+				c.addRaw(name, val, ts)
+			}
 		}
 	}
 }
