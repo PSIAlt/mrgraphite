@@ -46,9 +46,19 @@ var quantileMeasureMore = mrgraphite.NewQuantile("timing.measureTimerMore", 95)
 func measureTimerMore() {
 	defer quantileMeasureMore.GetTimer().SendSumCnt().SetDivider(1000).Stop()
 	// blahblahblah
-	// mrgraphite automatically aggregated number of microseconds elasped:
+	// mrgraphite automatically aggregated number of microseconds(divider=1000) elasped:
 	// timing.measureTimerMore_sum - sum of miscroseconds
 	// timing.measureTimerMore_cnt - number of metrics (you can get avg from this)
 	// timing.measureTimerMore_q95 - 95-quantile
+}
+
+func measureTimerQuantiles() {
+	q1 := mrgraphite.NewQuantile("timing.measureTimerQuantiles", 95)
+	q2 := mrgraphite.NewQuantile("timing.measureTimerQuantiles", 99.9)
+	defer q1.GetTimer().AddQuantile(q2).Stop()
+	// blahblahblah
+	// mrgraphite automatically aggregated number of microseconds elasped:
+	// timing.measureTimerQuantiles_q95
+	// timing.measureTimerQuantiles_q99_90
 }
 ```

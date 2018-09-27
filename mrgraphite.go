@@ -122,7 +122,7 @@ type Timer struct {
 	sendRaw    bool
 	sendSumCnt bool
 	divider uint
-	quantile   *Quantile
+	quantile   []*Quantile
 }
 
 func (c *Client) GetTimer(name string) *Timer {
@@ -133,6 +133,13 @@ func (c *Client) GetTimer(name string) *Timer {
 		quantile: nil,
 		divider: 1000000, //Milliseconds
 	}
+}
+func (t *Timer) AddQuantile(q *Quantile) *Timer {
+	if t.quantile == nil {
+		t.quantile = make([]*Quantile, 0, 2)
+	}
+	t.quantile = append(t.quantile, q)
+	return t
 }
 func (t *Timer) SetDivider(d uint) *Timer {
 	if d == 0 {
@@ -169,7 +176,9 @@ func (t *Timer) Stop() {
 		t.c.Inc(t.name + "_cnt")
 	}
 	if t.quantile != nil {
-		t.quantile.AddValue(tim)
+		for _, q := range t.quantile {
+			q.AddValue(tim)
+		}
 	}
 }
 

@@ -55,7 +55,7 @@ func (q *Quantile) GetTimer() *Timer {
 		q.c = defaultClient
 	}
 	t := q.c.GetTimer(q.name)
-	t.quantile = q
+	t.AddQuantile(q)
 	return t
 }
 
