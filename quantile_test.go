@@ -17,10 +17,11 @@ func TestQuantileEmpty(t *testing.T) {
 }
 
 type CalcCase struct {
-	qval float64
+	qval   float64
 	answer int64
 	values []int64
 }
+
 func TestQuantileCalc(t *testing.T) {
 	cases := []CalcCase{
 		{0, 1, []int64{1}},
@@ -63,7 +64,7 @@ func TestQuantileCalc(t *testing.T) {
 		if val1 != c.answer {
 			t.Errorf("q[%d] GetValue is wrong. got=%d want=%d", cn, val1, c.answer)
 		}
-		if qv :=q.GetQVal(); qv != c.qval {
+		if qv := q.GetQVal(); qv != c.qval {
 			t.Errorf("q[%d] GetQVal is wrong. got=%.2f want=%.2f", cn, qv, c.qval)
 		}
 	}

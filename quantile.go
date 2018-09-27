@@ -90,12 +90,12 @@ func (q *Quantile) GetValue() (retval int64, err error) {
 	ofs := int(nElem)
 
 	switch {
-		case ofs==0:
-			retval = vc[0]
-		case ofs>=n:
-			retval = vc[n-1]
-		default:
-			retval = vc[ofs]
+	case ofs == 0:
+		retval = vc[0]
+	case ofs >= n:
+		retval = vc[n-1]
+	default:
+		retval = vc[ofs]
 	}
 
 	if cap(vc) > 100000 {
