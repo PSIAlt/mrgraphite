@@ -18,17 +18,17 @@ var EmptyListError = errors.New("Empty list")
 type Quantile struct {
 	c      *Client
 	name   string
-	qVal   int
+	qVal   float64
 	values valuesType
 	mtx    sync.Mutex
 }
 
-func NewQuantile(name string, qVal int) *Quantile {
+func NewQuantile(name string, qVal float64) *Quantile {
 	return NewQuantileC(defaultClient, name, qVal)
 }
 
-func NewQuantileC(c *Client, name string, qVal int) *Quantile {
-	if qVal < 0 || qVal > 100 {
+func NewQuantileC(c *Client, name string, qVal float64) *Quantile {
+	if qVal < 0.0 || qVal > 100.0 {
 		panic("Wrong qVal")
 	}
 	q := &Quantile{
@@ -69,29 +69,38 @@ func (q *Quantile) GetName() string {
 	return q.name
 }
 
-func (q *Quantile) GetQVal() int {
+func (q *Quantile) GetQVal() float64 {
 	return q.qVal
 }
 
-func (q *Quantile) GetValue() (int64, error) {
+func (q *Quantile) GetValue() (retval int64, err error) {
 	q.mtx.Lock()
 	vc := q.values
 	q.values = valPool.Get().(valuesType)
 	q.mtx.Unlock()
 
-	if len(vc) == 0 {
+	n := len(vc)
+	if n == 0 {
 		valPool.Put(vc[:0])
 		return 0, EmptyListError
 	}
 
 	sort.Slice(vc, func(i, j int) bool { return vc[i] < vc[j] })
-	nElem := float64(len(vc)) / 100.0 * float64(q.qVal)
-	retval := vc[int(nElem)]
+	nElem := float64(n) * q.qVal / 100.0
+	ofs := int(nElem)
+
+	switch {
+		case ofs==0:
+			retval = vc[0]
+		case ofs>=n:
+			retval = vc[n-1]
+		default:
+			retval = vc[ofs]
+	}
 
 	if cap(vc) > 100000 {
 		vc = valPool.New().(valuesType)
 	}
 	valPool.Put(vc[:0])
-
-	return retval, nil
+	return
 }

@@ -97,6 +97,17 @@ func (c *Client) flushWrite() {
 	c.writeBuf = c.writeBuf[n:]
 }
 
+func floatRoundStr(in float64) string {
+	i := int(in)
+	f := in-float64(i)
+	f02 := int(f*100)
+	if f02 != 0 {
+		return fmt.Sprintf("%d_%d", i, f02)
+	} else {
+		return fmt.Sprintf("%d", i)
+	}
+}
+
 func (c *Client) writeAggr() {
 	doneCopy := c.done
 	// Aggregate aggrMsg
@@ -116,7 +127,7 @@ func (c *Client) writeAggr() {
 
 	for _, v := range c.quantileList {
 		if val, err := v.GetValue(); err == nil {
-			name := fmt.Sprintf("%s_q%d", v.GetName(), v.GetQVal())
+			name := fmt.Sprintf("%s_q%s", v.GetName(), floatRoundStr(v.GetQVal()))
 			select {
 			case <-doneCopy:
 				return
